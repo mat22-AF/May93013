@@ -1,119 +1,103 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@android:color/white"
-    tools:context=".MainActivity">
+my-secure-app/
+├── netlify/
+│   ├── functions/
+│   │   └── auth.js
+│   └── edge-functions/
+│       └── block-third-party.js
+├── public/
+│   ├── index.html
+│   ├── styles.css
+│   └── script.js
+└── netlify.toml
+const allowedApps = [
+  "com.your.app.package", // Your Android app ID
+  "web-admin"             // Your web dashboard
+];
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appbar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+exports.handler = async (event) => {
+  const appSignature = event.headers['x-app-signature'];
+  
+  if (!allowedApps.includes(appSignature)) {
+    return {
+      statusCode: 403,
+      body: JSON.stringify({ 
+        error: "Unauthorized client blocked",
+        timestamp: new Date().toISOString()
+      })
+    };
+  }
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            app:layout_scrollFlags="scroll|enterAlways"
-            app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
-            app:title="Connection Monitor"
-            app:titleTextColor="@android:color/white" />
+  // Process legitimate requests
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ status: "Access granted" })
+  };
+};
+export default async (request) => {
+  const validReferrers = [
+    "https://your-netlify-site.netlify.app",
+    "android-app://com.your.app.package"
+  ];
 
-    </com.google.android.material.appbar.AppBarLayout>
+  const referrer = request.headers.get('referer') || '';
+  const isAllowed = validReferrers.some(url => referrer.includes(url));
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+  if (!isAllowed) {
+    return new Response("Blocked: Invalid source", { 
+      status: 403,
+      headers: { 'x-shield': 'active' }
+    });
+  }
 
-        <FrameLayout
-            android:id="@+id/fragment_container"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            app:layout_constraintBottom_toTopOf="@+id/bottom_navigation"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <com.google.android.material.bottomnavigation.BottomNavigationView
-            android:id="@+id/bottom_navigation"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            android:background="?android:attr/windowBackground"
-            app:itemIconTint="@android:color/darker_gray"
-            app:itemTextColor="@android:color/black"
-            app:labelVisibilityMode="labeled"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:menu="@menu/bottom_navigation_menu" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_quick_action"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="80dp"
-        android:contentDescription="Quick Action"
-        android:src="@android:drawable/ic_menu_help"
-        app:backgroundTint="@android:color/holo_blue_dark"
-        app:fabSize="normal" />
-
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
-npm install
-cd ios && pod install && cd ..  # for iOS
-npx react-native run-android  # or run-ios
-npm run build  # Electron apps
-cargo build --release  # Rust apps
-my-netlify-app/
-├── index.html
-├── styles.css
-├── script.js
-└── netlify.toml (optional config)
+  return await fetch(request);
+};
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Netlify App</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure App Portal</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Welcome to My Netlify App! 🚀</h1>
-    <p>This is a static site hosted on Netlify.</p>
-    <button id="clickMe">Click Me</button>
-    <script src="script.js"></script>
+  <div class="container">
+    <h1>🔒 Secure Connection</h1>
+    <div id="auth-status">Verifying access...</div>
+    <button id="requestData">Fetch Secure Data</button>
+  </div>
+  <script src="script.js"></script>
 </body>
 </html>
-body {
-    font-family: Arial, sans-serif;
-    text-align: center;
-    margin-top: 50px;
-    background: #f0f8ff;
-}
-button {
-    padding: 10px 20px;
-    background: #0078d7;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-button:hover {
-    background: #005fa3;
-}
-document.getElementById("clickMe").addEventListener("click", () => {
-    alert("Netlify deployment successful! 🎉");
+document.getElementById('requestData').addEventListener('click', async () => {
+  try {
+    const response = await fetch('/.netlify/functions/auth', {
+      headers: {
+        'X-App-Signature': 'web-admin' // Web client identifier
+      }
+    });
+    
+    const data = await response.json();
+    document.getElementById('auth-status').textContent = 
+      response.ok ? `✅ ${data.status}` : `❌ ${data.error}`;
+  } catch (error) {
+    document.getElementById('auth-status').textContent = '🚨 Connection blocked';
+  }
 });
 [build]
-  command = "echo 'No build needed for static site'"
-  publish = "."
+  command = "echo 'No build required'"
+  publish = "public"
+
+[[edge_functions]]
+  path = "/*"
+  function = "block-third-party"
+
+[functions]
+  directory = "netlify/functions"
+val okHttpClient = OkHttpClient.Builder()
+    .addInterceptor { chain ->
+        val request = chain.request().newBuilder()
+            .addHeader("X-App-Signature", BuildConfig.APPLICATION_ID)
+            .build()
+        chain.proceed(request)
+    }
+    .build()
