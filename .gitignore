@@ -69,3 +69,8 @@
         app:fabSize="normal" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
+npm install
+cd ios && pod install && cd ..  # for iOS
+npx react-native run-android  # or run-ios
+npm run build  # Electron apps
+cargo build --release  # Rust apps
